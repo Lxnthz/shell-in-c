@@ -61,17 +61,21 @@ int main(int argc, char *argv[]) {
         continue;
       }
 
+      // Check if the argument is a built-in command
+      if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "type") == 0) {
+        printf("%s is a shell builtin\n", args[1]);
+        continue;
+      }
+
+      // Otherwise, check if it's an external file
       FILE *file = fopen(args[1], "r");
       if (file == NULL) {
         fprintf(stderr, "%s: No such file or directory\n", args[1]);
         continue;
       }
 
-      char line[256];
-      while (fgets(line, sizeof(line), file) != NULL) {
-        printf("%s", line);
-      }
       fclose(file);
+      printf("%s is an external file\n", args[1]);
       continue; // Skip forking and executing
     }
 
