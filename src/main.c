@@ -55,6 +55,17 @@ int main(int argc, char *argv[]) {
       continue; // Skip forking and executing
     }
 
+    // Handle the "pwd" command
+    if (strcmp(args[0], "pwd") == 0) {
+      char cwd[1024];
+      if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        printf("%s\n", cwd);
+      } else {
+        perror("pwd");
+      }
+      continue; // Skip forking and executing
+    }
+
     // Handle the "type" command
     if (strcmp(args[0], "type") == 0) {
       if (args[1] == NULL) {
@@ -63,7 +74,7 @@ int main(int argc, char *argv[]) {
       }
 
       // Check if the argument is a built-in command
-      if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "type") == 0) {
+      if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "type") == 0 || strcmp(args[1], "pwd") == 0) {
         printf("%s is a shell builtin\n", args[1]);
         continue;
       }
