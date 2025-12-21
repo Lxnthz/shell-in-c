@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
       // Otherwise, check if it's an external file
       FILE *file = fopen(args[1], "r");
       if (file == NULL) {
-        fprintf(stderr, "%s: No such file or directory\n", args[1]);
+        fprintf(stderr, "%s: not found\n", args[1]);
         continue;
       }
 
