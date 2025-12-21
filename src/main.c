@@ -47,16 +47,17 @@ int main(int argc, char *argv[]) {
     }
 
     if (pid == 0) {
+      // Child process: execute the command
       if (execvp(args[0], args) == -1) {
-        perror(args[0]);
+        // Print the expected error message format
+        fprintf(stderr, "%s: command not found\n", args[0]);
       }
       exit(EXIT_FAILURE);
     } else {
+      // Parent process: wait for the child to finish
       int status;
       waitpid(pid, &status, 0);
     }
-
-    printf("%s: command not found\n", command);
   }
 
   return 0;
