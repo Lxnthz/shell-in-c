@@ -70,8 +70,18 @@ int main(int argc, char *argv[]) {
     if (strcmp(args[0], "cd") == 0) {
       if (args[1] == NULL) {
         fprintf(stderr, "cd: missing argument\n");
+      } else if (strcmp(args[1], "~") == 0) {
+        // Handle "cd ~"
+        char *home = getenv("HOME");
+        if (home == NULL) {
+          fprintf(stderr, "cd: HOME environment variable not set\n");
+        } else {
+          if (chdir(home) != 0) {
+            fprintf(stderr, "cd: %s: No such file or directory\n", home);
+          }
+        }
       } else {
-        // Attempt to change directory
+        // Handle other paths
         if (chdir(args[1]) != 0) {
           fprintf(stderr, "cd: %s: No such file or directory\n", args[1]);
         }
