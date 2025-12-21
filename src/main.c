@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
@@ -67,15 +68,40 @@ int main(int argc, char *argv[]) {
         continue;
       }
 
-      // Otherwise, check if it's an external file
-      FILE *file = fopen(args[1], "r");
-      if (file == NULL) {
-        fprintf(stderr, "%s: not found\n", args[1]);
+      // Get the PATH environment variable
+      char *path_env = getenv("PATH");
+      if (path_env == NULL) {
+        fprintf(stderr, "type: PATH environment variable not set\n");
         continue;
       }
 
-      fclose(file);
-      printf("%s is an external file\n", args[1]);
+      // Split PATH into directories
+      char *path = strdup(path_env);
+      char *dir = strtok(path, ":");
+      int found = 0;
+
+      while (dir != NULL) {
+        // Construct the full path to the command
+        char full_path[512];
+        snprintf(full_path, sizeof(full_path), "%s/%s", dir, args[1]);
+
+        // Check if the file exists and is executable
+        struct stat sb;
+        if (stat(full_path, &sb) == 0 && (sb.st_mode & S_IXUSR)) {
+          printf("%s is %s\n", args[1], full_path);
+          found = 1;
+          break;
+        }
+
+        dir = strtok(NULL, ":");
+      }
+
+      free(path);
+
+      if (!found) {
+        fprintf(stderr, "%s: not found\n", args[1]);
+      }
+
       continue; // Skip forking and executing
     }
 
