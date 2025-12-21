@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
       if (args[1] == NULL) {
         fprintf(stderr, "cd: missing argument\n");
       } else {
+        // Attempt to change directory
         if (chdir(args[1]) != 0) {
           fprintf(stderr, "cd: %s: No such file or directory\n", args[1]);
         }
