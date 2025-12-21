@@ -24,7 +24,12 @@ int main(int argc, char *argv[]) {
     command[strcspn(command, "\n")] = '\0';
 
     if (strcmp(command, "exit") == 0) {
-      break;
+      if (args[1] != NULL) {
+        int exit_code = atoi(args[1]);
+        exit(exit_code);
+      } else {
+        exit(0);
+      }
     }
 
     int i = 0;
