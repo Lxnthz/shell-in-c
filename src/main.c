@@ -54,6 +54,27 @@ int main(int argc, char *argv[]) {
       continue; // Skip forking and executing
     }
 
+    // Handle the "type" command
+    if (strcmp(args[0], "type") == 0) {
+      if (args[1] == NULL) {
+        fprintf(stderr, "type: missing file operand\n");
+        continue;
+      }
+
+      FILE *file = fopen(args[1], "r");
+      if (file == NULL) {
+        fprintf(stderr, "type: %s: No such file or directory\n", args[1]);
+        continue;
+      }
+
+      char line[256];
+      while (fgets(line, sizeof(line), file) != NULL) {
+        printf("%s", line);
+      }
+      fclose(file);
+      continue; // Skip forking and executing
+    }
+
     pid_t pid = fork();
     if (pid == -1) {
       perror("fork");
