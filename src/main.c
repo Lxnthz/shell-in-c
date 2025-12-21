@@ -105,6 +105,7 @@ int main(int argc, char *argv[]) {
       continue; // Skip forking and executing
     }
 
+    // Handle external programs
     pid_t pid = fork();
     if (pid == -1) {
       perror("fork");
