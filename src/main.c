@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 
       FILE *file = fopen(args[1], "r");
       if (file == NULL) {
-        fprintf(stderr, "type: %s: No such file or directory\n", args[1]);
+        fprintf(stderr, "%s: No such file or directory\n", args[1]);
         continue;
       }
 
