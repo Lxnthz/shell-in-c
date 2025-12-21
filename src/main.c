@@ -23,7 +23,17 @@ int main(int argc, char *argv[]) {
     // Remove trailing newline character
     command[strcspn(command, "\n")] = '\0';
 
-    if (strcmp(command, "exit") == 0) {
+    // Tokenize the command
+    int i = 0;
+    char *token = strtok(command, " ");
+    while (token != NULL) {
+      args[i++] = token;
+      token = strtok(NULL, " ");
+    }
+    args[i] = NULL;
+
+    // Handle the "exit" command
+    if (strcmp(args[0], "exit") == 0) {
       if (args[1] != NULL) {
         int exit_code = atoi(args[1]);
         exit(exit_code);
@@ -32,13 +42,17 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    int i = 0;
-    char *token = strtok(command, " ");
-    while (token != NULL) {
-      args[i++] = token;
-      token = strtok(NULL, " ");
+    // Handle the "echo" command
+    if (strcmp(args[0], "echo") == 0) {
+      for (int j = 1; args[j] != NULL; j++) {
+        printf("%s", args[j]);
+        if (args[j + 1] != NULL) {
+          printf(" "); // Add a space between arguments
+        }
+      }
+      printf("\n");
+      continue; // Skip forking and executing
     }
-    args[i] = NULL;
 
     pid_t pid = fork();
     if (pid == -1) {
