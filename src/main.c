@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <ctype.h>
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
@@ -24,13 +25,36 @@ int main(int argc, char *argv[]) {
     // Remove trailing newline character
     command[strcspn(command, "\n")] = '\0';
 
-    // Tokenize the command
+    // Tokenize the command with support for single quotes
     int i = 0;
-    char *token = strtok(command, " ");
-    while (token != NULL) {
-      args[i++] = token;
-      token = strtok(NULL, " ");
+    int in_single_quotes = 0;
+    char *token_start = NULL;
+
+    for (char *p = command; *p != '\0'; p++) {
+      if (*p == '\'') {
+        in_single_quotes = !in_single_quotes;
+        if (in_single_quotes) {
+          token_start = p + 1; // Start of quoted token
+        } else {
+          *p = '\0'; // End of quoted token
+          args[i++] = token_start;
+          token_start = NULL;
+        }
+      } else if (isspace(*p) && !in_single_quotes) {
+        if (token_start) {
+          *p = '\0'; // End of token
+          args[i++] = token_start;
+          token_start = NULL;
+        }
+      } else if (!token_start) {
+        token_start = p; // Start of a new token
+      }
     }
+
+    if (token_start) {
+      args[i++] = token_start; // Add the last token
+    }
+
     args[i] = NULL;
 
     // Handle the "exit" command
