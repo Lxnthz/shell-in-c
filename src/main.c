@@ -80,7 +80,7 @@ char *command_generator(const char *text, int state) {
           snprintf(fpath, sizeof(fpath), "%s/%s", dir, dp->d_name);
           if (access(fpath, X_OK) == 0) {
             // Append a single trailing space to the completion
-            char *completion = malloc(strlen(dp->d_name) + 1);
+            char *completion = malloc(strlen(dp->d_name) + 2);
             sprintf(completion, "%s ", dp->d_name);
             return completion;
           }
