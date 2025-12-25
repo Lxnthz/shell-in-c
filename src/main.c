@@ -77,7 +77,7 @@ char *command_generator(const char *text, int state) {
       while ((dp = readdir(dirp)) != NULL) {
         if (strncmp(dp->d_name, text, len) == 0) {
           char fpath[PATH_MAX];
-          
+          snprintf(fpath, sizeof(fpath), "%s/%s", dir, dp->d_name);
           if (access(fpath, X_OK) == 0) {
             // Append a single trailing space to the completion
             char *completion = malloc(strlen(dp->d_name) + 2);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
   // Flush after every printf
   setbuf(stdout, NULL);
 
-  rl_attempted_completion_function = command_completion;
+  rl_attempted_completion_function = '\0';
 
   char command[256];
   char *args[10];
