@@ -35,85 +35,91 @@ char **command_completion(const char *text, int start, int end) {
 char *command_generator(const char *text, int state) {
   static int list_index, len;
   static char **path_dirs = NULL;
-  static int path_dir_index;
-  static DIR *dir = NULL;
-  static struct dirent *entry;
-
+  static int path_dir_index = 0;
   const char *name;
 
   if (state == 0) {
+    // Initialize the search
     list_index = 0;
     len = strlen(text);
-    path_dir_index = 0;
+    
 
-    if (dir) {
-      closedir(dir);
-      dir = NULL;
-    }
-
-    if (path_dirs) {
-      for (int i = 0; path_dirs[i]; i++) free(path_dirs[i]);
+    // Split PATH into directories
+    if (path_dirs != NULL) {
+      // Free previously allocated memory
+      for (int i = 0; path_dirs[i] != NULL; i++) {
+        free(path_dirs[i]);
+      }
       free(path_dirs);
-      path_dirs = NULL;
     }
 
     char *path_env = getenv("PATH");
-    if (!path_env) {
-      path_dirs = malloc(sizeof(char *));
-      path_dirs[0] = NULL;
-    } else {
-      char *tmp = strdup(path_env);
+    if (path_env != NULL) {
+      char *path = strdup(path_env);
       int count = 0;
-      for (char *p = strtok(tmp, ":"); p; p = strtok(NULL, ":")) count++;
-      free(tmp);
+      char *dir = strtok(path, ":");
+      while (dir != NULL) {
+        count++;
+        dir = strtok(NULL, ":");
+      }
+      free(path);
 
       path_dirs = malloc((count + 1) * sizeof(char *));
-      tmp = strdup(path_env);
+      path = strdup(path_env);
+      dir = strtok(path, ":");
       count = 0;
-      for (char *p = strtok(tmp, ":"); p; p = strtok(NULL, ":"))
-        path_dirs[count++] = strdup(p);
+      while (dir != NULL) {
+        path_dirs[count++] = strdup(dir);
+        dir = strtok(NULL, ":");
+      }
       path_dirs[count] = NULL;
-      free(tmp);
+      free(path);
+    } else {
+      path_dirs = malloc(sizeof(char *));
+      path_dirs[0] = NULL;
     }
+
+    path_dir_index = 0;
   }
 
-  /* Builtins (unchanged behavior) */
+  // First, check built-in commands
   while ((name = builtin_commands[list_index++]) != NULL) {
     if (strncmp(name, text, len) == 0) {
+      // Append a trailing space to the completion
       char *completion = malloc(strlen(name) + 2);
       sprintf(completion, "%s ", name);
       return completion;
     }
   }
 
-  /* External executables (iterator-safe) */
-  while (1) {
-    if (!dir) {
-      if (!path_dirs[path_dir_index]) return NULL;
-      dir = opendir(path_dirs[path_dir_index++]);
-      if (!dir) continue;
-    }
+  // Next, check external executables in PATH directories
+  while (path_dirs[path_dir_index] != NULL) {
+    DIR *dir = opendir(path_dirs[path_dir_index]);
+    if (dir != NULL) {
+      struct dirent *entry;
+      while ((entry = readdir(dir)) != NULL) {
+        if (strncmp(entry->d_name, text, len) == 0) {
+          struct stat sb;
+          char full_path[512];
+          snprintf(full_path, sizeof(full_path), "%s/%s", path_dirs[path_dir_index], entry->d_name);
+          if (stat(full_path, &sb) == 0 && (sb.st_mode & S_IXUSR)) {
+            closedir(dir);
 
-    while ((entry = readdir(dir)) != NULL) {
-      if (strncmp(entry->d_name, text, len) != 0) continue;
-
-      char full_path[512];
-      snprintf(full_path, sizeof(full_path),
-               "%s/%s", path_dirs[path_dir_index - 1], entry->d_name);
-
-      struct stat sb;
-      if (stat(full_path, &sb) == 0 && (sb.st_mode & S_IXUSR)) {
-        char *completion = malloc(strlen(entry->d_name) + 2);
-        sprintf(completion, "%s ", entry->d_name);
-        return completion;
+            // Append a trailing space to the completion
+            char *completion = malloc(strlen(entry->d_name) + 2);
+            sprintf(completion, "%s ", entry->d_name);
+            return completion;
+          }
+        }
       }
+      closedir(dir);
     }
-
-    closedir(dir);
-    dir = NULL;
+    path_dir_index++;
   }
-}
 
+  // No more matches
+  return NULL;
+}
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
