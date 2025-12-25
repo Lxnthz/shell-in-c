@@ -52,8 +52,14 @@ int main(int argc, char *argv[]) {
           args[i++] = strdup(current_arg); // Add the completed argument
           current_arg[0] = '\0'; // Reset the temporary buffer
         }
-      } else if (!token_start) {
-        token_start = p; // Start of a new token
+      } else {
+        if (!token_start) {
+          token_start = p; // Start of a new token
+        }
+        if (!in_single_quotes && *p != '\0' && !isspace(*p)) {
+          strcat(current_arg, token_start); // Append unquoted tokens
+          token_start = NULL;
+        }
       }
     }
 
