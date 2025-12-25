@@ -41,7 +41,8 @@ int main(int argc, char *argv[]) {
         else if (strncmp("exit", command + start, len) == 0) completion = "exit";
 
         if (completion) {
-          printf("%s \n", completion); // completion + trailing space
+          // Print the completed command with prompt and a trailing space
+          printf("$ %s \n", completion);
           continue; // skip execution, show prompt again
         }
       }
