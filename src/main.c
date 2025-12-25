@@ -260,17 +260,41 @@ int main(int argc, char *argv[]) {
       continue; // Skip forking and executing
     }
 
-    // Check for output redirection (>) and error redirection (2>)
+    // Check for output redirection (>) and appending redirection (>>)
     char *redirect_file_stdout = NULL;
     char *redirect_file_stderr = NULL;
+    int append_stdout = 0; // Flag to indicate appending for stdout
+    int append_stderr = 0; // Flag to indicate appending for stderr
+
     for (int j = 0; args[j] != NULL; j++) {
-      if (strcmp(args[j], ">") == 0 || strcmp(args[j], "1>") == 0) {
+      if (strcmp(args[j], ">>") == 0 || strcmp(args[j], "1>>") == 0) {
+        // Append stdout operator found
+        if (args[j + 1] == NULL) {
+          fprintf(stderr, "syntax error: expected file after '%s'\n", args[j]);
+          continue;
+        }
+        redirect_file_stdout = args[j + 1];
+        append_stdout = 1; // Set append flag for stdout
+        args[j] = NULL; // Terminate the arguments before the redirection operator
+        break;
+      } else if (strcmp(args[j], "2>>") == 0) {
+        // Append stderr operator found
+        if (args[j + 1] == NULL) {
+          fprintf(stderr, "syntax error: expected file after '%s'\n", args[j]);
+          continue;
+        }
+        redirect_file_stderr = args[j + 1];
+        append_stderr = 1; // Set append flag for stderr
+        args[j] = NULL; // Terminate the arguments before the redirection operator
+        break;
+      } else if (strcmp(args[j], ">") == 0 || strcmp(args[j], "1>") == 0) {
         // Redirect stdout operator found
         if (args[j + 1] == NULL) {
           fprintf(stderr, "syntax error: expected file after '%s'\n", args[j]);
           continue;
         }
         redirect_file_stdout = args[j + 1];
+        append_stdout = 0; // Overwrite mode for stdout
         args[j] = NULL; // Terminate the arguments before the redirection operator
         break;
       } else if (strcmp(args[j], "2>") == 0) {
@@ -280,6 +304,7 @@ int main(int argc, char *argv[]) {
           continue;
         }
         redirect_file_stderr = args[j + 1];
+        append_stderr = 0; // Overwrite mode for stderr
         args[j] = NULL; // Terminate the arguments before the redirection operator
         break;
       }
@@ -295,8 +320,8 @@ int main(int argc, char *argv[]) {
     if (pid == 0) {
       // Child process: handle redirection and execute the command
       if (redirect_file_stdout != NULL) {
-        // Open the file for writing (create if it doesn't exist, truncate if it does)
-        FILE *file = fopen(redirect_file_stdout, "w");
+        // Open the file for appending or overwriting
+        FILE *file = fopen(redirect_file_stdout, append_stdout ? "a" : "w");
         if (file == NULL) {
           perror("fopen");
           exit(EXIT_FAILURE);
@@ -308,8 +333,8 @@ int main(int argc, char *argv[]) {
       }
 
       if (redirect_file_stderr != NULL) {
-        // Open the file for writing (create if it doesn't exist, truncate if it does)
-        FILE *file = fopen(redirect_file_stderr, "w");
+        // Open the file for appending or overwriting
+        FILE *file = fopen(redirect_file_stderr, append_stderr ? "a" : "w");
         if (file == NULL) {
           perror("fopen");
           exit(EXIT_FAILURE);
