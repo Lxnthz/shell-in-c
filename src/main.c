@@ -25,6 +25,29 @@ int main(int argc, char *argv[]) {
     // Remove trailing newline character
     command[strcspn(command, "\n")] = '\0';
 
+    // TAB autocompletion for builtins ("echo", "exit")
+    char *tab = strchr(command, '\t');
+    if (tab) {
+      // Consider only the first word before the TAB
+      int start = 0;
+      while (command[start] && isspace((unsigned char)command[start])) start++;
+      int end = start;
+      while (&command[end] < tab && command[end] && !isspace((unsigned char)command[end])) end++;
+      size_t len = (size_t)(end - start);
+
+      if (len > 0) {
+        const char *completion = NULL;
+        if (strncmp("echo", command + start, len) == 0) completion = "echo";
+        else if (strncmp("exit", command + start, len) == 0) completion = "exit";
+
+        if (completion) {
+          printf("%s \n", completion); // completion + trailing space
+          continue; // skip execution, show prompt again
+        }
+      }
+      // If no completion, fall through to normal processing
+    }
+
     // Tokenize the command with support for single/double quotes and backslash escaping
     int i = 0;
     int in_single_quotes = 0;
