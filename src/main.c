@@ -234,16 +234,26 @@ int main(int argc, char *argv[]) {
       continue; // Skip forking and executing
     }
 
-    // Check for output redirection (>)
-    char *redirect_file = NULL;
+    // Check for output redirection (>) and error redirection (2>)
+    char *redirect_file_stdout = NULL;
+    char *redirect_file_stderr = NULL;
     for (int j = 0; args[j] != NULL; j++) {
       if (strcmp(args[j], ">") == 0 || strcmp(args[j], "1>") == 0) {
-        // Redirect operator found
+        // Redirect stdout operator found
         if (args[j + 1] == NULL) {
           fprintf(stderr, "syntax error: expected file after '%s'\n", args[j]);
           continue;
         }
-        redirect_file = args[j + 1];
+        redirect_file_stdout = args[j + 1];
+        args[j] = NULL; // Terminate the arguments before the redirection operator
+        break;
+      } else if (strcmp(args[j], "2>") == 0) {
+        // Redirect stderr operator found
+        if (args[j + 1] == NULL) {
+          fprintf(stderr, "syntax error: expected file after '%s'\n", args[j]);
+          continue;
+        }
+        redirect_file_stderr = args[j + 1];
         args[j] = NULL; // Terminate the arguments before the redirection operator
         break;
       }
@@ -258,9 +268,9 @@ int main(int argc, char *argv[]) {
 
     if (pid == 0) {
       // Child process: handle redirection and execute the command
-      if (redirect_file != NULL) {
+      if (redirect_file_stdout != NULL) {
         // Open the file for writing (create if it doesn't exist, truncate if it does)
-        FILE *file = fopen(redirect_file, "w");
+        FILE *file = fopen(redirect_file_stdout, "w");
         if (file == NULL) {
           perror("fopen");
           exit(EXIT_FAILURE);
@@ -268,6 +278,19 @@ int main(int argc, char *argv[]) {
 
         // Redirect standard output to the file
         dup2(fileno(file), STDOUT_FILENO);
+        fclose(file);
+      }
+
+      if (redirect_file_stderr != NULL) {
+        // Open the file for writing (create if it doesn't exist, truncate if it does)
+        FILE *file = fopen(redirect_file_stderr, "w");
+        if (file == NULL) {
+          perror("fopen");
+          exit(EXIT_FAILURE);
+        }
+
+        // Redirect standard error to the file
+        dup2(fileno(file), STDERR_FILENO);
         fclose(file);
       }
 
