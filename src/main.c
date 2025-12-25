@@ -81,7 +81,7 @@ char *command_generator(const char *text, int state) {
           if (access(fpath, X_OK) == 0) {
             // Append a single trailing space to the completion
             char *completion = malloc(strlen(dp->d_name) + 2);
-            sprintf(completion, "%s ", dp->d_name);
+            sprintf(completion, "%s", dp->d_name);
             return completion;
           }
         }
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
   // Flush after every printf
   setbuf(stdout, NULL);
 
-  rl_attempted_completion_function = '\0';
+  rl_attempted_completion_function = command_completion;
 
   char command[256];
   char *args[10];
