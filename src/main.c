@@ -206,6 +206,21 @@ int main(int argc, char *argv[]) {
       continue; // Skip forking and executing
     }
 
+    // Check for output redirection (>)
+    char *redirect_file = NULL;
+    for (int j = 0; args[j] != NULL; j++) {
+      if (strcmp(args[j], ">") == 0 || strcmp(args[j], "1>") == 0) {
+        // Redirect operator found
+        if (args[j + 1] == NULL) {
+          fprintf(stderr, "syntax error: expected file after '%s'\n", args[j]);
+          continue;
+        }
+        redirect_file = args[j + 1];
+        args[j] = NULL; // Terminate the arguments before the redirection operator
+        break;
+      }
+    }
+
     // Handle external programs
     pid_t pid = fork();
     if (pid == -1) {
@@ -214,7 +229,21 @@ int main(int argc, char *argv[]) {
     }
 
     if (pid == 0) {
-      // Child process: execute the command
+      // Child process: handle redirection and execute the command
+      if (redirect_file != NULL) {
+        // Open the file for writing (create if it doesn't exist, truncate if it does)
+        FILE *file = fopen(redirect_file, "w");
+        if (file == NULL) {
+          perror("fopen");
+          exit(EXIT_FAILURE);
+        }
+
+        // Redirect standard output to the file
+        dup2(fileno(file), STDOUT_FILENO);
+        fclose(file);
+      }
+
+      // Execute the command
       if (execvp(args[0], args) == -1) {
         // Print the expected error message format
         fprintf(stderr, "%s: command not found\n", args[0]);
