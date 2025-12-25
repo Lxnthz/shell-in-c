@@ -25,31 +25,47 @@ int main(int argc, char *argv[]) {
     // Remove trailing newline character
     command[strcspn(command, "\n")] = '\0';
 
-    // Tokenize the command with support for single/double quotes and backslash escaping (outside quotes only)
+    // Tokenize the command with support for single/double quotes and backslash escaping
     int i = 0;
     int in_single_quotes = 0;
     int in_double_quotes = 0;
-    char *current_arg = malloc(256);
-    int arg_len = 0;
+    char *current_arg = malloc(256); // Temporary buffer for the current argument
+    int arg_len = 0; // Track the length of current_arg
 
     char *p = command;
     while (*p != '\0') {
-      if (*p == '\\' && !in_single_quotes && !in_double_quotes) {
-        // Backslash escapes next character only outside quotes
-        p++;
-        if (*p != '\0') {
-          current_arg[arg_len++] = *p;
+      if (*p == '\\' && !in_single_quotes) {
+        // Handle backslash escaping
+        if (in_double_quotes) {
+          // Inside double quotes, only escape certain characters
           p++;
+          if (*p == '"' || *p == '\\') {
+            current_arg[arg_len++] = *p; // Add the escaped character
+          } else {
+            current_arg[arg_len++] = '\\'; // Treat backslash literally
+            if (*p != '\0') {
+              current_arg[arg_len++] = *p; // Add the next character
+            }
+          }
+          if (*p != '\0') p++;
+        } else {
+          // Outside quotes, escape the next character
+          p++;
+          if (*p != '\0') {
+            current_arg[arg_len++] = *p;
+            p++;
+          }
         }
       } else if (*p == '\'' && !in_double_quotes) {
-        // Toggle single-quote mode; inside single quotes, everything (including backslashes) is literal
+        // Toggle single-quote mode; treat contents literally
         in_single_quotes = !in_single_quotes;
         p++;
       } else if (*p == '"' && !in_single_quotes) {
-        // Toggle double-quote mode; treat contents literally for this stage
+        // Toggle double-quote mode
         in_double_quotes = !in_double_quotes;
         p++;
       } else if (isspace((unsigned char)*p) && !in_single_quotes && !in_double_quotes) {
+        // Found a delimiter outside quotes
         if (arg_len > 0) {
           current_arg[arg_len] = '\0';
           args[i++] = strdup(current_arg);
@@ -57,11 +73,13 @@ int main(int argc, char *argv[]) {
         }
         while (isspace((unsigned char)*p)) p++;
       } else {
+        // Regular character (inside or outside quotes)
         current_arg[arg_len++] = *p;
         p++;
       }
     }
 
+    // Add the last argument if any
     if (arg_len > 0) {
       current_arg[arg_len] = '\0';
       args[i++] = strdup(current_arg);
