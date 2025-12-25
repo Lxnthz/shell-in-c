@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <dirent.h>
 
 char **command_completion(const char *text, int start, int end);
 char *command_generator(const char *text, int state);
@@ -33,20 +34,79 @@ char **command_completion(const char *text, int start, int end) {
 
 char *command_generator(const char *text, int state) {
   static int list_index, len;
+  static char **path_dirs = NULL;
+  static int path_dir_index = 0;
   const char *name;
 
   if (state == 0) {
     // Initialize the search
     list_index = 0;
     len = strlen(text);
+
+    // Split PATH into directories
+    if (path_dirs != NULL) {
+      // Free previously allocated memory
+      for (int i = 0; path_dirs[i] != NULL; i++) {
+        free(path_dirs[i]);
+      }
+      free(path_dirs);
+    }
+
+    char *path_env = getenv("PATH");
+    if (path_env != NULL) {
+      char *path = strdup(path_env);
+      int count = 0;
+      char *dir = strtok(path, ":");
+      while (dir != NULL) {
+        count++;
+        dir = strtok(NULL, ":");
+      }
+      free(path);
+
+      path_dirs = malloc((count + 1) * sizeof(char *));
+      path = strdup(path_env);
+      dir = strtok(path, ":");
+      count = 0;
+      while (dir != NULL) {
+        path_dirs[count++] = strdup(dir);
+        dir = strtok(NULL, ":");
+      }
+      path_dirs[count] = NULL;
+      free(path);
+    } else {
+      path_dirs = malloc(sizeof(char *));
+      path_dirs[0] = NULL;
+    }
+
+    path_dir_index = 0;
   }
 
-  // Iterate through the list of built-in commands
+  // First, check built-in commands
   while ((name = builtin_commands[list_index++]) != NULL) {
     if (strncmp(name, text, len) == 0) {
-      // Return a match
       return strdup(name);
     }
+  }
+
+  // Next, check external executables in PATH directories
+  while (path_dirs[path_dir_index] != NULL) {
+    DIR *dir = opendir(path_dirs[path_dir_index]);
+    if (dir != NULL) {
+      struct dirent *entry;
+      while ((entry = readdir(dir)) != NULL) {
+        if (strncmp(entry->d_name, text, len) == 0) {
+          struct stat sb;
+          char full_path[512];
+          snprintf(full_path, sizeof(full_path), "%s/%s", path_dirs[path_dir_index], entry->d_name);
+          if (stat(full_path, &sb) == 0 && (sb.st_mode & S_IXUSR)) {
+            closedir(dir);
+            return strdup(entry->d_name);
+          }
+        }
+      }
+      closedir(dir);
+    }
+    path_dir_index++;
   }
 
   // No more matches
