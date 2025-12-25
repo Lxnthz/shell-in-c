@@ -84,7 +84,10 @@ char *command_generator(const char *text, int state) {
   // First, check built-in commands
   while ((name = builtin_commands[list_index++]) != NULL) {
     if (strncmp(name, text, len) == 0) {
-      return strdup(name);
+      // Append a trailing space to the completion
+      char *completion = malloc(strlen(name) + 2);
+      sprintf(completion, "%s ", name);
+      return completion;
     }
   }
 
@@ -100,7 +103,11 @@ char *command_generator(const char *text, int state) {
           snprintf(full_path, sizeof(full_path), "%s/%s", path_dirs[path_dir_index], entry->d_name);
           if (stat(full_path, &sb) == 0 && (sb.st_mode & S_IXUSR)) {
             closedir(dir);
-            return strdup(entry->d_name);
+
+            // Append a trailing space to the completion
+            char *completion = malloc(strlen(entry->d_name) + 2);
+            sprintf(completion, "%s ", entry->d_name);
+            return completion;
           }
         }
       }
