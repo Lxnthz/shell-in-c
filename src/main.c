@@ -6,10 +6,53 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <readline/readline.h>
+#include <readline/history.h>
+
+char **command_completion(const char *text, int start, int end);
+char *command_generator(const char *text, int state);
+
+const char *builtin_commands[] = {
+    "echo",
+    "exit",
+    NULL
+};
+
+char **command_completion(const char *text, int start, int end) {
+  // Only attempt completion for the first word
+  if (start == 0) {
+    return rl_completion_matches(text, command_generator);
+  }
+  return NULL;
+}
+
+char *command_generator(const char *text, int state) {
+  static int list_index, len;
+  const char *name;
+
+  if (state == 0) {
+    // Initialize the search
+    list_index = 0;
+    len = strlen(text);
+  }
+
+  // Iterate through the list of built-in commands
+  while ((name = builtin_commands[list_index++]) != NULL) {
+    if (strncmp(name, text, len) == 0) {
+      // Return a match
+      return strdup(name);
+    }
+  }
+
+  // No more matches
+  return NULL;
+}
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
   setbuf(stdout, NULL);
+
+  rl_attempted_completion_function = command_completion;
 
   char command[256];
   char *args[10];
