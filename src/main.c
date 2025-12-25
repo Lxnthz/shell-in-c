@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
   // Flush after every printf
   setbuf(stdout, NULL);
 
-  rl_attempted_completion_function = command_completion;
+  rl_attempted_completion_function = '\0';
 
   char command[256];
   char *args[10];
