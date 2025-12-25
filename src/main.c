@@ -25,10 +25,12 @@ int main(int argc, char *argv[]) {
     // Remove trailing newline character
     command[strcspn(command, "\n")] = '\0';
 
-    // Tokenize the command with support for single quotes
+    // Tokenize the command with support for single quotes and concatenation of adjacent quoted strings
     int i = 0;
     int in_single_quotes = 0;
     char *token_start = NULL;
+    char *current_arg = malloc(256); // Temporary buffer for the current argument
+    current_arg[0] = '\0';
 
     for (char *p = command; *p != '\0'; p++) {
       if (*p == '\'') {
@@ -37,14 +39,18 @@ int main(int argc, char *argv[]) {
           token_start = p + 1; // Start of quoted token
         } else {
           *p = '\0'; // End of quoted token
-          args[i++] = token_start;
+          strcat(current_arg, token_start); // Append quoted string to current argument
           token_start = NULL;
         }
       } else if (isspace(*p) && !in_single_quotes) {
         if (token_start) {
           *p = '\0'; // End of token
-          args[i++] = token_start;
+          strcat(current_arg, token_start); // Append to current argument
           token_start = NULL;
+        }
+        if (current_arg[0] != '\0') {
+          args[i++] = strdup(current_arg); // Add the completed argument
+          current_arg[0] = '\0'; // Reset the temporary buffer
         }
       } else if (!token_start) {
         token_start = p; // Start of a new token
@@ -52,10 +58,15 @@ int main(int argc, char *argv[]) {
     }
 
     if (token_start) {
-      args[i++] = token_start; // Add the last token
+      strcat(current_arg, token_start); // Add the last token
+    }
+
+    if (current_arg[0] != '\0') {
+      args[i++] = strdup(current_arg); // Add the last completed argument
     }
 
     args[i] = NULL;
+    free(current_arg);
 
     // Handle the "exit" command
     if (strcmp(args[0], "exit") == 0) {
