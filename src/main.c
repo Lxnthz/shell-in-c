@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     // Remove trailing newline character
     command[strcspn(command, "\n")] = '\0';
 
-    // Tokenize the command with support for single and double quotes and concatenation of adjacent quoted strings
+    // Tokenize the command with support for single and double quotes, concatenation of adjacent quoted strings, and backslash escaping
     int i = 0;
     int in_single_quotes = 0;
     int in_double_quotes = 0;
@@ -34,7 +34,14 @@ int main(int argc, char *argv[]) {
     
     char *p = command;
     while (*p != '\0') {
-      if (*p == '\'' && !in_double_quotes) {
+      if (*p == '\\' && !in_single_quotes) {
+        // Handle backslash escaping (only outside single quotes)
+        p++; // Skip the backslash
+        if (*p != '\0') {
+          current_arg[arg_len++] = *p; // Add the escaped character
+          p++;
+        }
+      } else if (*p == '\'' && !in_double_quotes) {
         // Toggle single quote state (only if not in double quotes)
         in_single_quotes = !in_single_quotes;
         p++;
