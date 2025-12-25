@@ -88,6 +88,18 @@ int main(int argc, char *argv[]) {
     args[i] = NULL;
     free(current_arg);
 
+    // Remove quotes from the executable name (first token)
+    if (args[0] != NULL) {
+      char *executable = args[0];
+      int exec_len = strlen(executable);
+      if ((executable[0] == '\'' && executable[exec_len - 1] == '\'') ||
+          (executable[0] == '"' && executable[exec_len - 1] == '"')) {
+        // Remove the surrounding quotes
+        executable[exec_len - 1] = '\0';
+        memmove(executable, executable + 1, exec_len - 1);
+      }
+    }
+
     // Handle the "exit" command
     if (strcmp(args[0], "exit") == 0) {
       if (args[1] != NULL) {
