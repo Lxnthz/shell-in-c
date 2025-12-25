@@ -34,52 +34,28 @@ char **command_completion(const char *text, int start, int end) {
 
 char *command_generator(const char *text, int state) {
   static int list_index, len;
-  static char **path_dirs = NULL;
-  static int path_dir_index = 0;
+  static char *path = NULL, *dir = NULL;
+  static DIR *dirp = NULL;
+  static struct dirent *dp = NULL;
   const char *name;
 
   if (state == 0) {
     // Initialize the search
     list_index = 0;
     len = strlen(text);
-    
 
-    // Split PATH into directories
-    if (path_dirs != NULL) {
-      // Free previously allocated memory
-      for (int i = 0; path_dirs[i] != NULL; i++) {
-        free(path_dirs[i]);
-      }
-      free(path_dirs);
-    }
-
-    char *path_env = getenv("PATH");
-    if (path_env != NULL) {
-      char *path = strdup(path_env);
-      int count = 0;
-      char *dir = strtok(path, ":");
-      while (dir != NULL) {
-        count++;
-        dir = strtok(NULL, ":");
-      }
+    // Free previously allocated memory for PATH
+    if (path) {
       free(path);
-
-      path_dirs = malloc((count + 1) * sizeof(char *));
-      path = strdup(path_env);
-      dir = strtok(path, ":");
-      count = 0;
-      while (dir != NULL) {
-        path_dirs[count++] = strdup(dir);
-        dir = strtok(NULL, ":");
-      }
-      path_dirs[count] = NULL;
-      free(path);
-    } else {
-      path_dirs = malloc(sizeof(char *));
-      path_dirs[0] = NULL;
     }
+    path = strdup(getenv("PATH"));
+    dir = strtok(path, ":");
 
-    path_dir_index = 0;
+    // Close any previously opened directory
+    if (dirp) {
+      closedir(dirp);
+    }
+    dirp = NULL;
   }
 
   // First, check built-in commands
@@ -93,31 +69,31 @@ char *command_generator(const char *text, int state) {
   }
 
   // Next, check external executables in PATH directories
-  while (path_dirs[path_dir_index] != NULL) {
-    DIR *dir = opendir(path_dirs[path_dir_index]);
-    if (dir != NULL) {
-      struct dirent *entry;
-      while ((entry = readdir(dir)) != NULL) {
-        if (strncmp(entry->d_name, text, len) == 0) {
-          struct stat sb;
-          char full_path[512];
-          snprintf(full_path, sizeof(full_path), "%s/%s", path_dirs[path_dir_index], entry->d_name);
-          if (stat(full_path, &sb) == 0 && (sb.st_mode & S_IXUSR)) {
-            closedir(dir);
-
+  while (dir) {
+    if (!dirp) {
+      dirp = opendir(dir);
+    }
+    if (dirp) {
+      while ((dp = readdir(dirp)) != NULL) {
+        if (strncmp(dp->d_name, text, len) == 0) {
+          char fpath[PATH_MAX];
+          snprintf(fpath, sizeof(fpath), "%s/%s", dir, dp->d_name);
+          if (access(fpath, X_OK) == 0) {
             // Append a trailing space to the completion
-            char *completion = malloc(strlen(entry->d_name) + 2);
-            sprintf(completion, "%s ", entry->d_name);
+            char *completion = malloc(strlen(dp->d_name) + 2);
+            sprintf(completion, "%s ", dp->d_name);
             return completion;
           }
         }
       }
-      closedir(dir);
+      closedir(dirp);
+      dirp = NULL;
     }
-    path_dir_index++;
+    dir = strtok(NULL, ":");
   }
 
-  // No more matches
+  // No matches found, ring the bell
+  printf("\x07"); // Print the bell character
   return NULL;
 }
 
