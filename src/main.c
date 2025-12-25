@@ -28,49 +28,36 @@ int main(int argc, char *argv[]) {
     // Tokenize the command with support for single quotes and concatenation of adjacent quoted strings
     int i = 0;
     int in_single_quotes = 0;
-    char *token_start = NULL;
     char *current_arg = malloc(256); // Temporary buffer for the current argument
-    current_arg[0] = '\0';
-
-    for (char *p = command; *p != '\0'; p++) {
+    int arg_len = 0; // Track the length of current_arg
+    
+    char *p = command;
+    while (*p != '\0') {
       if (*p == '\'') {
+        // Toggle quote state
         in_single_quotes = !in_single_quotes;
-        if (in_single_quotes) {
-          token_start = p + 1; // Start of quoted token
-        } else {
-          *p = '\0'; // End of quoted token
-          strcat(current_arg, token_start); // Append quoted string to current argument
-          token_start = NULL;
-        }
+        p++;
       } else if (isspace(*p) && !in_single_quotes) {
-        if (token_start) {
-          *p = '\0'; // End of token
-          strcat(current_arg, token_start); // Append to current argument
-          token_start = NULL;
+        // Found a delimiter outside quotes
+        if (arg_len > 0) {
+          current_arg[arg_len] = '\0';
+          args[i++] = strdup(current_arg);
+          arg_len = 0;
         }
-        if (current_arg[0] != '\0') {
-          args[i++] = strdup(current_arg); // Add the completed argument
-          current_arg[0] = '\0'; // Reset the temporary buffer
-        }
+        p++;
       } else {
-        if (!token_start) {
-          token_start = p; // Start of a new token
-        }
-        if (!in_single_quotes && *p != '\0' && !isspace(*p)) {
-          strcat(current_arg, token_start); // Append unquoted tokens
-          token_start = NULL;
-        }
+        // Regular character (inside or outside quotes)
+        current_arg[arg_len++] = *p;
+        p++;
       }
     }
-
-    if (token_start) {
-      strcat(current_arg, token_start); // Add the last token
+    
+    // Add the last argument if any
+    if (arg_len > 0) {
+      current_arg[arg_len] = '\0';
+      args[i++] = strdup(current_arg);
     }
-
-    if (current_arg[0] != '\0') {
-      args[i++] = strdup(current_arg); // Add the last completed argument
-    }
-
+    
     args[i] = NULL;
     free(current_arg);
 
