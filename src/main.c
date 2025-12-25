@@ -112,13 +112,41 @@ int main(int argc, char *argv[]) {
 
     // Handle the "echo" command
     if (strcmp(args[0], "echo") == 0) {
-      for (int j = 1; args[j] != NULL; j++) {
-        printf("%s", args[j]);
-        if (args[j + 1] != NULL) {
-          printf(" "); // Add a space between arguments
+      FILE *output = stdout; // Default to standard output
+      char *redirect_file = NULL;
+      for (int j = 0; args[j] != NULL; j++) {
+        if (strcmp(args[j], ">") == 0 || strcmp(args[j], "1>") == 0) {
+          // Redirect operator found
+          if (args[j + 1] == NULL) {
+            fprintf(stderr, "syntax error: expected file after '%s'\n", args[j]);
+            continue;
+          }
+          redirect_file = args[j + 1];
+          args[j] = NULL; // Terminate the arguments before the redirection operator
+          break;
         }
       }
-      printf("\n");
+
+      if (redirect_file != NULL) {
+        // Open the file for writing (create if it doesn't exist, truncate if it does)
+        output = fopen(redirect_file, "w");
+        if (output == NULL) {
+          perror("fopen");
+          continue;
+        }
+      }
+
+      for (int j = 1; args[j] != NULL; j++) {
+        fprintf(output, "%s", args[j]);
+        if (args[j + 1] != NULL) {
+          fprintf(output, " "); // Add a space between arguments
+        }
+      }
+      fprintf(output, "\n");
+
+      if (redirect_file != NULL) {
+        fclose(output); // Close the file if redirection was used
+      }
       continue; // Skip forking and executing
     }
 
