@@ -19,11 +19,16 @@ const char *builtin_commands[] = {
 };
 
 char **command_completion(const char *text, int start, int end) {
-  // Only attempt completion for the first word
+  // Only attempt completion for the first word (the command)
   if (start == 0) {
-    return rl_completion_matches(text, command_generator);
+    char **matches = rl_completion_matches(text, command_generator);
+    if (matches == NULL) {
+      // No matches found, ring the bell
+      printf("\x07"); // Print the bell character
+    }
+    return matches;
   }
-  return NULL;
+  return NULL; // No autocompletion for arguments
 }
 
 char *command_generator(const char *text, int state) {
