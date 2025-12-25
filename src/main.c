@@ -25,19 +25,24 @@ int main(int argc, char *argv[]) {
     // Remove trailing newline character
     command[strcspn(command, "\n")] = '\0';
 
-    // Tokenize the command with support for single quotes and concatenation of adjacent quoted strings
+    // Tokenize the command with support for single and double quotes and concatenation of adjacent quoted strings
     int i = 0;
     int in_single_quotes = 0;
+    int in_double_quotes = 0;
     char *current_arg = malloc(256); // Temporary buffer for the current argument
     int arg_len = 0; // Track the length of current_arg
     
     char *p = command;
     while (*p != '\0') {
-      if (*p == '\'') {
-        // Toggle quote state
+      if (*p == '\'' && !in_double_quotes) {
+        // Toggle single quote state (only if not in double quotes)
         in_single_quotes = !in_single_quotes;
         p++;
-      } else if (isspace(*p) && !in_single_quotes) {
+      } else if (*p == '"' && !in_single_quotes) {
+        // Toggle double quote state (only if not in single quotes)
+        in_double_quotes = !in_double_quotes;
+        p++;
+      } else if (isspace(*p) && !in_single_quotes && !in_double_quotes) {
         // Found a delimiter outside quotes
         if (arg_len > 0) {
           current_arg[arg_len] = '\0';
