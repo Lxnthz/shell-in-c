@@ -29,20 +29,20 @@ int main(int argc, char *argv[]) {
     int i = 0;
     int in_single_quotes = 0;
     int in_double_quotes = 0;
-    char *current_arg = malloc(256); // Temporary buffer for the current argument
-    int arg_len = 0; // Track the length of current_arg
+    char *current_arg = malloc(256);
+    int arg_len = 0;
 
     char *p = command;
     while (*p != '\0') {
       if (*p == '\\' && !in_single_quotes && !in_double_quotes) {
-        // Backslash escapes next character outside of any quotes
+        // Backslash escapes next character only outside quotes
         p++;
         if (*p != '\0') {
           current_arg[arg_len++] = *p;
           p++;
         }
       } else if (*p == '\'' && !in_double_quotes) {
-        // Toggle single-quote mode; treat contents literally
+        // Toggle single-quote mode; inside single quotes, everything (including backslashes) is literal
         in_single_quotes = !in_single_quotes;
         p++;
       } else if (*p == '"' && !in_single_quotes) {
@@ -50,22 +50,18 @@ int main(int argc, char *argv[]) {
         in_double_quotes = !in_double_quotes;
         p++;
       } else if (isspace((unsigned char)*p) && !in_single_quotes && !in_double_quotes) {
-        // Delimiter outside quotes: finalize current_arg if non-empty
         if (arg_len > 0) {
           current_arg[arg_len] = '\0';
           args[i++] = strdup(current_arg);
           arg_len = 0;
         }
-        // Collapse consecutive whitespace
         while (isspace((unsigned char)*p)) p++;
       } else {
-        // Regular character (inside or outside quotes)
         current_arg[arg_len++] = *p;
         p++;
       }
     }
 
-    // Add the last argument if any
     if (arg_len > 0) {
       current_arg[arg_len] = '\0';
       args[i++] = strdup(current_arg);
