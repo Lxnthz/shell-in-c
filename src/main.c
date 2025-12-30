@@ -133,6 +133,33 @@ void execute_pipeline(char *cmd1, char *cmd2) {
         }
         args1[i] = NULL;
 
+        // Check if cmd1 is a built-in command
+        if (strcmp(args1[0], "echo") == 0) {
+            // Handle "echo" built-in
+            for (int j = 1; args1[j] != NULL; j++) {
+                printf("%s", args1[j]);
+                if (args1[j + 1] != NULL) {
+                    printf(" ");
+                }
+            }
+            printf("\n");
+            exit(0);
+        } else if (strcmp(args1[0], "exit") == 0) {
+            // Handle "exit" built-in
+            exit(0);
+        } else if (strcmp(args1[0], "type") == 0) {
+            // Handle "type" built-in
+            if (args1[1] == NULL) {
+                fprintf(stderr, "type: missing file operand\n");
+            } else if (strcmp(args1[1], "echo") == 0 || strcmp(args1[1], "exit") == 0 || strcmp(args1[1], "type") == 0) {
+                printf("%s is a shell builtin\n", args1[1]);
+            } else {
+                fprintf(stderr, "%s: not found\n", args1[1]);
+            }
+            exit(0);
+        }
+
+        // If not a built-in, execute as an external command
         if (execvp(args1[0], args1) == -1) {
             perror("execvp");
             exit(EXIT_FAILURE);
@@ -161,6 +188,33 @@ void execute_pipeline(char *cmd1, char *cmd2) {
         }
         args2[i] = NULL;
 
+        // Check if cmd2 is a built-in command
+        if (strcmp(args2[0], "echo") == 0) {
+            // Handle "echo" built-in
+            for (int j = 1; args2[j] != NULL; j++) {
+                printf("%s", args2[j]);
+                if (args2[j + 1] != NULL) {
+                    printf(" ");
+                }
+            }
+            printf("\n");
+            exit(0);
+        } else if (strcmp(args2[0], "exit") == 0) {
+            // Handle "exit" built-in
+            exit(0);
+        } else if (strcmp(args2[0], "type") == 0) {
+            // Handle "type" built-in
+            if (args2[1] == NULL) {
+                fprintf(stderr, "type: missing file operand\n");
+            } else if (strcmp(args2[1], "echo") == 0 || strcmp(args2[1], "exit") == 0 || strcmp(args2[1], "type") == 0) {
+                printf("%s is a shell builtin\n", args2[1]);
+            } else {
+                fprintf(stderr, "%s: not found\n", args2[1]);
+            }
+            exit(0);
+        }
+
+        // If not a built-in, execute as an external command
         if (execvp(args2[0], args2) == -1) {
             perror("execvp");
             exit(EXIT_FAILURE);
