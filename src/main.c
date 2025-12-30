@@ -310,6 +310,16 @@ void execute_pipeline(char *commands) {
                             fprintf(stderr, "history: %s: cannot write history file\n", args[2]);
                         }
                     }
+                } else if (args[1] != NULL && strcmp(args[1], "-a") == 0) {
+                    // Check for -a flag to append new history entries to file
+                    if (args[2] == NULL) {
+                        fprintf(stderr, "history: -a: option requires an argument\n");
+                    } else {
+                        // Append new history entries to the specified file
+                        if (append_history(history_length, args[2]) != 0) {
+                            fprintf(stderr, "history: %s: cannot append to history file\n", args[2]);
+                        }
+                    }
                 } else {
                     // Display history
                     HIST_ENTRY **hist_list = history_list();
@@ -674,6 +684,16 @@ int main(int argc, char *argv[]) {
           // Write history to the specified file
           if (write_history(args[2]) != 0) {
             fprintf(stderr, "history: %s: cannot write history file\n", args[2]);
+          }
+        }
+      } else if (args[1] != NULL && strcmp(args[1], "-a") == 0) {
+        // Check for -a flag to append new history entries to file
+        if (args[2] == NULL) {
+          fprintf(stderr, "history: -a: option requires an argument\n");
+        } else {
+          // Append new history entries to the specified file
+          if (append_history(history_length, args[2]) != 0) {
+            fprintf(stderr, "history: %s: cannot append to history file\n", args[2]);
           }
         }
       } else {
