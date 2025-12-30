@@ -389,6 +389,12 @@ int main(int argc, char *argv[]) {
 
   rl_attempted_completion_function = command_completion;
 
+  // Load history from HISTFILE if it exists
+  char *histfile = getenv("HISTFILE");
+  if (histfile != NULL) {
+    read_history(histfile);
+  }
+
   char command[256];
   char *args[10];
 
