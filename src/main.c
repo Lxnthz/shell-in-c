@@ -158,30 +158,7 @@ void execute_pipeline(char *commands) {
             }
             args[arg_idx] = NULL;
 
-            // Check for built-in commands
-            if (strcmp(args[0], "echo") == 0) {
-                for (int j = 1; args[j] != NULL; j++) {
-                    printf("%s", args[j]);
-                    if (args[j + 1] != NULL) {
-                        printf(" ");
-                    }
-                }
-                printf("\n");
-                exit(0);
-            } else if (strcmp(args[0], "exit") == 0) {
-                exit(0);
-            } else if (strcmp(args[0], "type") == 0) {
-                if (args[1] == NULL) {
-                    fprintf(stderr, "type: missing file operand\n");
-                } else if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "type") == 0) {
-                    printf("%s is a shell builtin\n", args[1]);
-                } else {
-                    fprintf(stderr, "%s: not found\n", args[1]);
-                }
-                exit(0);
-            }
-
-            // Execute external commands
+            // Execute the command
             if (execvp(args[0], args) == -1) {
                 perror("execvp");
                 exit(EXIT_FAILURE);
