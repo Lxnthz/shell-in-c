@@ -617,6 +617,17 @@ int main(int argc, char *argv[]) {
       continue; // Skip forking and executing
     }
 
+    // Handle the "history" command
+    if (strcmp(args[0], "history") == 0) {
+      HIST_ENTRY **hist_list = history_list();
+      if (hist_list) {
+        for (int j = 0; hist_list[j] != NULL; j++) {
+          printf("%5d  %s\n", j + 1, hist_list[j]->line);
+        }
+      }
+      continue; // Skip forking and executing
+    }
+
     // Check for output redirection (>) and appending redirection (>>)
     char *redirect_file_stdout = NULL;
     char *redirect_file_stderr = NULL;
