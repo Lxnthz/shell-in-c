@@ -292,7 +292,21 @@ void execute_pipeline(char *commands) {
             } else if (strcmp(args[0], "history") == 0) {
                 HIST_ENTRY **hist_list = history_list();
                 if (hist_list) {
-                    for (int j = 0; hist_list[j] != NULL; j++) {
+                    int total_entries = 0;
+                    while (hist_list[total_entries] != NULL) {
+                        total_entries++;
+                    }
+                    
+                    int start_index = 0;
+                    if (args[1] != NULL) {
+                        // history <n> - show last n entries
+                        int n = atoi(args[1]);
+                        if (n > 0 && n < total_entries) {
+                            start_index = total_entries - n;
+                        }
+                    }
+                    
+                    for (int j = start_index; hist_list[j] != NULL; j++) {
                         printf("%5d  %s\n", j + 1, hist_list[j]->line);
                     }
                 }
@@ -621,7 +635,21 @@ int main(int argc, char *argv[]) {
     if (strcmp(args[0], "history") == 0) {
       HIST_ENTRY **hist_list = history_list();
       if (hist_list) {
-        for (int j = 0; hist_list[j] != NULL; j++) {
+        int total_entries = 0;
+        while (hist_list[total_entries] != NULL) {
+          total_entries++;
+        }
+        
+        int start_index = 0;
+        if (args[1] != NULL) {
+          // history <n> - show last n entries
+          int n = atoi(args[1]);
+          if (n > 0 && n < total_entries) {
+            start_index = total_entries - n;
+          }
+        }
+        
+        for (int j = start_index; hist_list[j] != NULL; j++) {
           printf("%5d  %s\n", j + 1, hist_list[j]->line);
         }
       }
