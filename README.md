@@ -1,34 +1,176 @@
 [![progress-banner](https://backend.codecrafters.io/progress/shell/6a41fe25-8426-4f96-ac18-af954a9151ec)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
 
-This is a starting point for C solutions to the
 ["Build Your Own Shell" Challenge](https://app.codecrafters.io/courses/shell/overview).
 
-In this challenge, you'll build your own POSIX compliant shell that's capable of
-interpreting shell commands, running external programs and builtin commands like
-cd, pwd, echo and more. Along the way, you'll learn about shell command parsing,
-REPLs, builtin commands, and more.
+---
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+# Build Your Own Shell (C)
 
-# Passing the first stage
+This repository contains my solution to the **CodeCrafters “Build Your Own Shell” challenge**, implemented in **C**.
 
-The entry point for your `shell` implementation is in `src/main.c`. Study and
-uncomment the relevant code, and push your changes to pass the first stage:
+A shell is the program that interprets what you type into the terminal. It reads your commands, runs programs, and prints their output. Popular examples include **Bash** and **ZSH**.
 
-```sh
-git commit -am "pass 1st stage" # any msg
-git push origin master
-```
+In this challenge, I’m building my **own shell from scratch**.
 
-Time to move on to the next stage!
+---
 
-# Stage 2 & beyond
+## What am I building?
 
-Note: This section is for stages 2 and beyond.
+I’m building a **POSIX-style shell** that runs a **REPL** (Read–Eval–Print Loop), parses user input, spawns processes, and supports both built-in commands and external programs.
 
-1. Ensure you have `cmake` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `src/main.c`.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
+At the early stages, my shell already feels usable. I can type commands, see their output, and navigate the filesystem just like in a real shell.
+
+### Core features implemented early on
+
+* Reading and parsing user input
+* Running a REPL
+* Built-in commands like `pwd`, `cd`, `echo`, `exit`
+* Locating executables using `$PATH`
+* Launching external programs via OS processes
+
+As the project progresses, I incrementally add more advanced shell features.
+
+---
+
+## Advanced features implemented over time
+
+As I move through the stages, the shell gains support for:
+
+* Piping and redirection
+* Command history
+* Autocompletion
+* Quoting and escaping
+* Multi-command pipelines
+* Persistent history
+* And more
+
+By the end, this repository serves as a **complete, non-trivial systems project** that I can showcase.
+
+---
+
+## What am I learning?
+
+### In the first stages, I learn:
+
+* How a shell actually reads, parses, and executes commands (it’s not magic)
+* What a REPL is and how it works internally
+* How built-in commands (like `echo`) differ from external programs
+* What `$PATH` means and how executable lookup works
+* How processes are spawned and how exit codes propagate
+
+### In later stages, I learn:
+
+* How to parse more complex syntax (quotes, escapes, pipelines)
+* How to manage file descriptors for redirection and pipes
+* How real shells structure their logic to stay maintainable
+* How to refactor code safely as complexity increases
+
+As the codebase grows, I’m forced to **structure and refactor** my implementation to avoid regressions and make new features easier to add.
+
+---
+
+## Why build a shell?
+
+Building a shell blends:
+
+* System design
+* Low-level programming
+* Operating system concepts
+* Real-world tooling knowledge
+
+If you’ve mostly worked on application-level or web code, this project pulls you **closer to how your computer actually runs software**.
+
+Beyond the technical depth, there’s something uniquely satisfying about understanding a tool you use every day. By the end of this challenge, I come away as a more confident and well-rounded developer.
+
+---
+
+## Prerequisites
+
+* Comfort writing code in at least one programming language
+* Familiarity with Git
+
+No prior experience with shells or operating systems is required. Most concepts (like processes and file descriptors) are learned along the way.
+
+What matters most is **curiosity and persistence**. This is not a follow-along tutorial — exploration, debugging, and discovery are part of the learning process.
+
+---
+
+## Implemented Stages
+
+### Basics
+
+* Print a prompt
+* Handle invalid commands
+* Implement a REPL
+* Implement `exit`
+* Implement `echo`
+* Implement `type`
+* Locate executable files
+* Run a program
+
+### Navigation
+
+* The `pwd` builtin
+* The `cd` builtin (absolute paths)
+* The `cd` builtin (relative paths)
+* The `cd` builtin (home directory)
+
+### Quoting and Escaping
+
+* Quoting
+* Single quotes
+* Double quotes
+* Backslash outside quotes
+* Backslash within single quotes
+* Backslash within double quotes
+* Executing a quoted executable
+
+### Redirection
+
+* Redirect stdout
+* Redirect stderr
+* Append stdout
+* Append stderr
+
+### Autocompletion
+
+* Built-in completion
+* Completion with arguments
+* Missing completions
+* Executable completion
+* Multiple completions
+* Partial completions
+
+### Pipelines
+
+* Dual-command pipeline
+* Pipelines with built-ins
+* Multi-command pipelines
+
+### History
+
+* The `history` builtin
+* Listing history
+* Limiting history entries
+* Up-arrow navigation
+* Down-arrow navigation
+* Executing commands from history
+
+### History Persistence
+
+* Read history from file
+* Write history to file
+* Append history to file
+* Read history on startup
+* Write history on exit
+* Append history on exit
+
+---
+
+If you want, I can also:
+
+* Tighten the language for a **portfolio README**
+* Add a **demo GIF / usage section**
+* Write a **“What I struggled with” / lessons learned** section
+
+Just say which direction you want.
