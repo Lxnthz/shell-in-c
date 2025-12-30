@@ -105,17 +105,15 @@ void execute_pipeline(char *commands) {
     char *cmds[10];
     int num_cmds = 0;
 
-    /* ---- FIX 1: re-entrant tokenizer for pipeline split ---- */
     char *saveptr1;
     char *token = strtok_r(commands, "|", &saveptr1);
-    while (token != NULL && num_cmds < 10) {
-        while (isspace(*token)) token++;   // preserve your behavior
-        cmds[num_cmds++] = token;
+    while (token && num_cmds < 10) {
+        while (isspace(*token)) token++;
+        cmds[num_cmds++] = strdup(token);   // 🔑 OWN THE BUFFER
         token = strtok_r(NULL, "|", &saveptr1);
     }
 
     int pipefds[2 * (num_cmds - 1)];
-
     for (int i = 0; i < num_cmds - 1; i++) {
         if (pipe(pipefds + i * 2) == -1) {
             perror("pipe");
@@ -139,33 +137,32 @@ void execute_pipeline(char *commands) {
             for (int j = 0; j < 2 * (num_cmds - 1); j++)
                 close(pipefds[j]);
 
-            /* ---- FIX 2: re-entrant tokenizer for args ---- */
             char *args[10];
             int arg_idx = 0;
             char *saveptr2;
-            char *arg_token = strtok_r(cmds[i], " ", &saveptr2);
-            while (arg_token != NULL && arg_idx < 9) {
-                args[arg_idx++] = arg_token;
-                arg_token = strtok_r(NULL, " ", &saveptr2);
+            char *arg = strtok_r(cmds[i], " ", &saveptr2);
+            while (arg && arg_idx < 9) {
+                args[arg_idx++] = arg;
+                arg = strtok_r(NULL, " ", &saveptr2);
             }
             args[arg_idx] = NULL;
 
-            /* ---- BUILTINS: UNCHANGED ---- */
+            /* ---- BUILTINS (UNCHANGED) ---- */
             if (strcmp(args[0], "echo") == 0) {
-                for (int j = 1; args[j] != NULL; j++) {
+                for (int j = 1; args[j]; j++) {
                     printf("%s", args[j]);
-                    if (args[j + 1] != NULL) printf(" ");
+                    if (args[j + 1]) printf(" ");
                 }
                 printf("\n");
                 exit(0);
             } else if (strcmp(args[0], "exit") == 0) {
                 exit(0);
             } else if (strcmp(args[0], "type") == 0) {
-                if (args[1] == NULL) {
+                if (!args[1]) {
                     fprintf(stderr, "type: missing file operand\n");
-                } else if (strcmp(args[1], "echo") == 0 ||
-                           strcmp(args[1], "exit") == 0 ||
-                           strcmp(args[1], "type") == 0) {
+                } else if (!strcmp(args[1], "echo") ||
+                           !strcmp(args[1], "exit") ||
+                           !strcmp(args[1], "type")) {
                     printf("%s is a shell builtin\n", args[1]);
                 } else {
                     fprintf(stderr, "%s: not found\n", args[1]);
@@ -184,7 +181,11 @@ void execute_pipeline(char *commands) {
 
     for (int i = 0; i < num_cmds; i++)
         wait(NULL);
+
+    for (int i = 0; i < num_cmds; i++)
+        free(cmds[i]);   // 🔑 CLEANUP
 }
+
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
