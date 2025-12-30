@@ -300,6 +300,16 @@ void execute_pipeline(char *commands) {
                             fprintf(stderr, "history: %s: cannot read history file\n", args[2]);
                         }
                     }
+                } else if (args[1] != NULL && strcmp(args[1], "-w") == 0) {
+                    // Check for -w flag to write history to file
+                    if (args[2] == NULL) {
+                        fprintf(stderr, "history: -w: option requires an argument\n");
+                    } else {
+                        // Write history to the specified file
+                        if (write_history(args[2]) != 0) {
+                            fprintf(stderr, "history: %s: cannot write history file\n", args[2]);
+                        }
+                    }
                 } else {
                     // Display history
                     HIST_ENTRY **hist_list = history_list();
@@ -654,6 +664,16 @@ int main(int argc, char *argv[]) {
           // Read history from the specified file
           if (read_history(args[2]) != 0) {
             fprintf(stderr, "history: %s: cannot read history file\n", args[2]);
+          }
+        }
+      } else if (args[1] != NULL && strcmp(args[1], "-w") == 0) {
+        // Check for -w flag to write history to file
+        if (args[2] == NULL) {
+          fprintf(stderr, "history: -w: option requires an argument\n");
+        } else {
+          // Write history to the specified file
+          if (write_history(args[2]) != 0) {
+            fprintf(stderr, "history: %s: cannot write history file\n", args[2]);
           }
         }
       } else {
