@@ -10,7 +10,7 @@ This repository contains my solution to the **CodeCrafters “Build Your Own She
 
 A shell is the program that interprets what you type into the terminal. It reads your commands, runs programs, and prints their output. Popular examples include **Bash** and **ZSH**.
 
-In this challenge, I’m building my **own shell from scratch**.
+In this challenge, I’m building my **own shell from scratch in C**.
 
 ---
 
