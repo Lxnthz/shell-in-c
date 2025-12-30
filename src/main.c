@@ -72,36 +72,43 @@ char *command_generator(const char *text, int state) {
   while (dir) {
     if (!dirp) {
       dirp = opendir(dir);
+      if (!dirp) {
+        // Skip non-existent or inaccessible directories
+        dir = strtok(NULL, ":");
+        continue;
+      }
     }
-    if (dirp) {
-      while ((dp = readdir(dirp)) != NULL) {
-        if (strncmp(dp->d_name, text, len) == 0) {
-          char fpath[PATH_MAX];
-          snprintf(fpath, sizeof(fpath), "%s/%s", dir, dp->d_name);
-          if (access(fpath, X_OK) == 0) {
-            // Append a single trailing space to the completion
-            char *completion = malloc(strlen(dp->d_name) + 2);
-            sprintf(completion, "%s ", dp->d_name);
-            return completion;
-          }
+    while ((dp = readdir(dirp)) != NULL) {
+      if (strncmp(dp->d_name, text, len) == 0) {
+        char fpath[PATH_MAX];
+        snprintf(fpath, sizeof(fpath), "%s/%s", dir, dp->d_name);
+        if (access(fpath, X_OK) == 0) {
+          // Append a single trailing space to the completion
+          char *completion = malloc(strlen(dp->d_name) + 2);
+          sprintf(completion, "%s ", dp->d_name);
+          return completion;
         }
       }
-      closedir(dirp);
-      dirp = NULL;
     }
+    closedir(dirp);
+    dirp = NULL;
     dir = strtok(NULL, ":");
   }
 
-  // No matches found, ring the bell
-  printf("\x07"); // Print the bell character
-  return NULL;
+  // Cleanup after all directories are processed
+  if (path) {
+    free(path);
+    path = NULL;
+  }
+
+  return NULL; // No matches found
 }
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
   setbuf(stdout, NULL);
 
-  rl_attempted_completion_function = '\0';
+  rl_attempted_completion_function = command_completion;
 
   char command[256];
   char *args[10];
