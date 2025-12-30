@@ -61,10 +61,8 @@ char *command_generator(const char *text, int state) {
   // First, check built-in commands
   while ((name = builtin_commands[list_index++]) != NULL) {
     if (strncmp(name, text, len) == 0) {
-      // Append a single trailing space to the completion
-      char *completion = malloc(strlen(name) + 2);
-      sprintf(completion, "%s ", name);
-      return completion;
+      // Return the built-in command as is (readline handles trailing space)
+      return strdup(name);
     }
   }
 
@@ -83,10 +81,8 @@ char *command_generator(const char *text, int state) {
         char fpath[PATH_MAX];
         snprintf(fpath, sizeof(fpath), "%s/%s", dir, dp->d_name);
         if (access(fpath, X_OK) == 0) {
-          // Append a single trailing space to the completion
-          char *completion = malloc(strlen(dp->d_name) + 2);
-          sprintf(completion, "%s ", dp->d_name);
-          return completion;
+          // Return the executable name as is (readline handles trailing space)
+          return strdup(dp->d_name);
         }
       }
     }
