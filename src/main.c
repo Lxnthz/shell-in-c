@@ -21,6 +21,9 @@ const char *builtin_commands[] = {
     NULL
 };
 
+// Track the number of history entries written to file
+int history_base_for_append = 0;
+
 char **command_completion(const char *text, int start, int end) {
   // Only attempt completion for the first word (the command)
   if (start == 0) {
@@ -315,9 +318,18 @@ void execute_pipeline(char *commands) {
                     if (args[2] == NULL) {
                         fprintf(stderr, "history: -a: option requires an argument\n");
                     } else {
-                        // Append new history entries to the specified file
-                        if (append_history(history_length, args[2]) != 0) {
-                            fprintf(stderr, "history: %s: cannot append to history file\n", args[2]);
+                        // Calculate how many new entries to append
+                        int current_length = history_length;
+                        int new_entries = current_length - history_base_for_append;
+                        
+                        // Append only new history entries to the specified file
+                        if (new_entries > 0) {
+                            if (append_history(new_entries, args[2]) != 0) {
+                                fprintf(stderr, "history: %s: cannot append to history file\n", args[2]);
+                            } else {
+                                // Update the base to the current length
+                                history_base_for_append = current_length;
+                            }
                         }
                     }
                 } else {
@@ -691,9 +703,18 @@ int main(int argc, char *argv[]) {
         if (args[2] == NULL) {
           fprintf(stderr, "history: -a: option requires an argument\n");
         } else {
-          // Append new history entries to the specified file
-          if (append_history(history_length, args[2]) != 0) {
-            fprintf(stderr, "history: %s: cannot append to history file\n", args[2]);
+          // Calculate how many new entries to append
+          int current_length = history_length;
+          int new_entries = current_length - history_base_for_append;
+          
+          // Append only new history entries to the specified file
+          if (new_entries > 0) {
+            if (append_history(new_entries, args[2]) != 0) {
+              fprintf(stderr, "history: %s: cannot append to history file\n", args[2]);
+            } else {
+              // Update the base to the current length
+              history_base_for_append = current_length;
+            }
           }
         }
       } else {
