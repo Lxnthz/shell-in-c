@@ -181,15 +181,58 @@ void execute_pipeline(char *commands) {
             // Create a copy of the command for tokenization
             char *cmd_copy = strdup(cmds[i]);
             
-            // Tokenize the current command
-            char *args[10];
+            // Tokenize the current command - use proper parsing
+            char *args[20];
             int arg_idx = 0;
-            char *arg_token = strtok(cmd_copy, " ");
-            while (arg_token != NULL) {
-                args[arg_idx++] = arg_token;
-                arg_token = strtok(NULL, " ");
+            char *p = cmd_copy;
+            char *arg_start = NULL;
+            int in_quotes = 0;
+            
+            // Skip leading spaces
+            while (*p && isspace(*p)) p++;
+            arg_start = p;
+            
+            while (*p) {
+                if (*p == '"') {
+                    in_quotes = !in_quotes;
+                    p++;
+                } else if (!in_quotes && isspace(*p)) {
+                    // End of current argument
+                    *p = '\0';
+                    if (arg_start && *arg_start) {
+                        // Remove quotes if present
+                        if (*arg_start == '"') {
+                            arg_start++;
+                            char *end = arg_start + strlen(arg_start) - 1;
+                            if (*end == '"') *end = '\0';
+                        }
+                        args[arg_idx++] = arg_start;
+                    }
+                    // Skip spaces
+                    p++;
+                    while (*p && isspace(*p)) p++;
+                    arg_start = p;
+                } else {
+                    p++;
+                }
+            }
+            
+            // Add last argument
+            if (arg_start && *arg_start) {
+                // Remove quotes if present
+                if (*arg_start == '"') {
+                    arg_start++;
+                    char *end = arg_start + strlen(arg_start) - 1;
+                    if (*end == '"') *end = '\0';
+                }
+                args[arg_idx++] = arg_start;
             }
             args[arg_idx] = NULL;
+
+            if (args[0] == NULL) {
+                free(cmd_copy);
+                exit(EXIT_FAILURE);
+            }
 
             // Handle built-in commands
             if (strcmp(args[0], "echo") == 0) {
@@ -208,7 +251,9 @@ void execute_pipeline(char *commands) {
             } else if (strcmp(args[0], "type") == 0) {
                 if (args[1] == NULL) {
                     fprintf(stderr, "type: missing file operand\n");
-                } else if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "type") == 0 || strcmp(args[1], "pwd") == 0 || strcmp(args[1], "cd") == 0) {
+                } else if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || 
+                           strcmp(args[1], "type") == 0 || strcmp(args[1], "pwd") == 0 || 
+                           strcmp(args[1], "cd") == 0) {
                     printf("%s is a shell builtin\n", args[1]);
                 } else {
                     fprintf(stderr, "%s: not found\n", args[1]);
