@@ -9,6 +9,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <dirent.h>
+#include <fcntl.h>
 
 char **command_completion(const char *text, int start, int end);
 char *command_generator(const char *text, int state);
@@ -98,6 +99,79 @@ char *command_generator(const char *text, int state) {
   }
 
   return NULL; // No matches found
+}
+
+void execute_pipeline(char *cmd1, char *cmd2) {
+    int pipefd[2];
+    pid_t pid1, pid2;
+
+    // Create the pipe
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        return;
+    }
+
+    // Fork the first child process
+    pid1 = fork();
+    if (pid1 == -1) {
+        perror("fork");
+        return;
+    }
+
+    if (pid1 == 0) {
+        // First child process: execute cmd1
+        close(pipefd[0]); // Close the read end of the pipe
+        dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to the write end of the pipe
+        close(pipefd[1]); // Close the write end after duplicating
+
+        char *args1[10];
+        int i = 0;
+        char *token = strtok(cmd1, " ");
+        while (token != NULL) {
+            args1[i++] = token;
+            token = strtok(NULL, " ");
+        }
+        args1[i] = NULL;
+
+        if (execvp(args1[0], args1) == -1) {
+            perror("execvp");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Fork the second child process
+    pid2 = fork();
+    if (pid2 == -1) {
+        perror("fork");
+        return;
+    }
+
+    if (pid2 == 0) {
+        // Second child process: execute cmd2
+        close(pipefd[1]); // Close the write end of the pipe
+        dup2(pipefd[0], STDIN_FILENO); // Redirect stdin to the read end of the pipe
+        close(pipefd[0]); // Close the read end after duplicating
+
+        char *args2[10];
+        int i = 0;
+        char *token = strtok(cmd2, " ");
+        while (token != NULL) {
+            args2[i++] = token;
+            token = strtok(NULL, " ");
+        }
+        args2[i] = NULL;
+
+        if (execvp(args2[0], args2) == -1) {
+            perror("execvp");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Parent process: close both ends of the pipe and wait for both children
+    close(pipefd[0]);
+    close(pipefd[1]);
+    waitpid(pid1, NULL, 0);
+    waitpid(pid2, NULL, 0);
 }
 
 int main(int argc, char *argv[]) {
