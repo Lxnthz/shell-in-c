@@ -199,6 +199,23 @@ int main(int argc, char *argv[]) {
     strncpy(command, line, sizeof(command) - 1);
     command[sizeof(command) - 1] = '\0';
 
+    // Check for the pipe operator
+    char *pipe_pos = strchr(command, '|');
+    if (pipe_pos != NULL) {
+      // Split the command into two parts
+      *pipe_pos = '\0';
+      char *cmd1 = command;
+      char *cmd2 = pipe_pos + 1;
+
+      // Trim leading/trailing spaces
+      while (*cmd1 == ' ') cmd1++;
+      while (*cmd2 == ' ') cmd2++;
+
+      execute_pipeline(cmd1, cmd2);
+      free(line);
+      continue;
+    }
+
     // Tokenize the command with support for single/double quotes and backslash escaping
     int i = 0;
     int in_single_quotes = 0;
