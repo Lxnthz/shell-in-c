@@ -133,7 +133,10 @@ char **getPipedCommands(char *input_buffer, int *num_cmds) {
 // Updated execute_pipeline function
 void execute_pipeline(char *commands) {
     int num_cmds = 0;
-    char **cmds = getPipedCommands(commands, &num_cmds);
+    
+    // Create a copy of commands to avoid modifying the original
+    char *commands_copy = strdup(commands);
+    char **cmds = getPipedCommands(commands_copy, &num_cmds);
 
     int pipefds[2 * (num_cmds - 1)]; // Array to store pipe file descriptors
 
@@ -142,6 +145,7 @@ void execute_pipeline(char *commands) {
         if (pipe(pipefds + i * 2) == -1) {
             perror("pipe");
             free(cmds);
+            free(commands_copy);
             return;
         }
     }
@@ -152,6 +156,7 @@ void execute_pipeline(char *commands) {
         if (pid == -1) {
             perror("fork");
             free(cmds);
+            free(commands_copy);
             return;
         }
 
@@ -173,10 +178,13 @@ void execute_pipeline(char *commands) {
                 close(pipefds[j]);
             }
 
+            // Create a copy of the command for tokenization
+            char *cmd_copy = strdup(cmds[i]);
+            
             // Tokenize the current command
             char *args[10];
             int arg_idx = 0;
-            char *arg_token = strtok(cmds[i], " ");
+            char *arg_token = strtok(cmd_copy, " ");
             while (arg_token != NULL) {
                 args[arg_idx++] = arg_token;
                 arg_token = strtok(NULL, " ");
@@ -192,23 +200,55 @@ void execute_pipeline(char *commands) {
                     }
                 }
                 printf("\n");
+                free(cmd_copy);
                 exit(0);
             } else if (strcmp(args[0], "exit") == 0) {
+                free(cmd_copy);
                 exit(0);
             } else if (strcmp(args[0], "type") == 0) {
                 if (args[1] == NULL) {
                     fprintf(stderr, "type: missing file operand\n");
-                } else if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "type") == 0) {
+                } else if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "type") == 0 || strcmp(args[1], "pwd") == 0 || strcmp(args[1], "cd") == 0) {
                     printf("%s is a shell builtin\n", args[1]);
                 } else {
                     fprintf(stderr, "%s: not found\n", args[1]);
                 }
+                free(cmd_copy);
+                exit(0);
+            } else if (strcmp(args[0], "pwd") == 0) {
+                char cwd[1024];
+                if (getcwd(cwd, sizeof(cwd)) != NULL) {
+                    printf("%s\n", cwd);
+                } else {
+                    perror("pwd");
+                }
+                free(cmd_copy);
+                exit(0);
+            } else if (strcmp(args[0], "cd") == 0) {
+                if (args[1] == NULL) {
+                    fprintf(stderr, "cd: missing argument\n");
+                } else if (strcmp(args[1], "~") == 0) {
+                    char *home = getenv("HOME");
+                    if (home == NULL) {
+                        fprintf(stderr, "cd: HOME environment variable not set\n");
+                    } else {
+                        if (chdir(home) != 0) {
+                            fprintf(stderr, "cd: %s: No such file or directory\n", home);
+                        }
+                    }
+                } else {
+                    if (chdir(args[1]) != 0) {
+                        fprintf(stderr, "cd: %s: No such file or directory\n", args[1]);
+                    }
+                }
+                free(cmd_copy);
                 exit(0);
             }
 
             // Execute external commands
             if (execvp(args[0], args) == -1) {
-                perror("execvp");
+                fprintf(stderr, "%s: command not found\n", args[0]);
+                free(cmd_copy);
                 exit(EXIT_FAILURE);
             }
         }
@@ -225,6 +265,7 @@ void execute_pipeline(char *commands) {
     }
 
     free(cmds);
+    free(commands_copy);
 }
 
 
