@@ -101,16 +101,39 @@ char *command_generator(const char *text, int state) {
   return NULL; // No matches found
 }
 
-void execute_pipeline(char *commands) {
-    char *cmds[10]; // Array to store individual commands
-    int num_cmds = 0;
+// Helper function to trim leading and trailing spaces
+char *trim(char *str) {
+    while (isspace((unsigned char)*str)) str++; // Trim leading spaces
+    if (*str == 0) return str; // Empty string
 
-    // Split the input into individual commands using '|'
-    char *token = strtok(commands, "|");
+    char *end = str + strlen(str) - 1;
+    while (end > str && isspace((unsigned char)*end)) end--; // Trim trailing spaces
+    end[1] = '\0';
+
+    return str;
+}
+
+// Function to split the input into piped commands
+char **getPipedCommands(char *input_buffer, int *num_cmds) {
+    char **cmds = malloc(10 * sizeof(char *)); // Maximum of 10 commands
+    if (!cmds) {
+        perror("malloc failed");
+        exit(EXIT_FAILURE);
+    }
+    int ind = 0;
+    char *token = strtok(input_buffer, "|");
     while (token != NULL) {
-        cmds[num_cmds++] = token;
+        cmds[ind++] = trim(token);
         token = strtok(NULL, "|");
     }
+    *num_cmds = ind;
+    return cmds;
+}
+
+// Updated execute_pipeline function
+void execute_pipeline(char *commands) {
+    int num_cmds = 0;
+    char **cmds = getPipedCommands(commands, &num_cmds);
 
     int pipefds[2 * (num_cmds - 1)]; // Array to store pipe file descriptors
 
@@ -118,6 +141,7 @@ void execute_pipeline(char *commands) {
     for (int i = 0; i < num_cmds - 1; i++) {
         if (pipe(pipefds + i * 2) == -1) {
             perror("pipe");
+            free(cmds);
             return;
         }
     }
@@ -127,6 +151,7 @@ void execute_pipeline(char *commands) {
         pid_t pid = fork();
         if (pid == -1) {
             perror("fork");
+            free(cmds);
             return;
         }
 
@@ -198,6 +223,8 @@ void execute_pipeline(char *commands) {
     for (int i = 0; i < num_cmds; i++) {
         wait(NULL);
     }
+
+    free(cmds);
 }
 
 
