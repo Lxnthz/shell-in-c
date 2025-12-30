@@ -102,18 +102,19 @@ char *command_generator(const char *text, int state) {
 }
 
 void execute_pipeline(char *commands) {
-    char *cmds[10];
+    char *cmds[10]; // Array to store individual commands
     int num_cmds = 0;
 
-    char *saveptr1;
-    char *token = strtok_r(commands, "|", &saveptr1);
-    while (token && num_cmds < 10) {
-        while (isspace(*token)) token++;
-        cmds[num_cmds++] = strdup(token);   // 🔑 OWN THE BUFFER
-        token = strtok_r(NULL, "|", &saveptr1);
+    // Split the input into individual commands using '|'
+    char *token = strtok(commands, "|");
+    while (token != NULL) {
+        cmds[num_cmds++] = token;
+        token = strtok(NULL, "|");
     }
 
-    int pipefds[2 * (num_cmds - 1)];
+    int pipefds[2 * (num_cmds - 1)]; // Array to store pipe file descriptors
+
+    // Create pipes
     for (int i = 0; i < num_cmds - 1; i++) {
         if (pipe(pipefds + i * 2) == -1) {
             perror("pipe");
@@ -121,6 +122,7 @@ void execute_pipeline(char *commands) {
         }
     }
 
+    // Fork processes for each command
     for (int i = 0; i < num_cmds; i++) {
         pid_t pid = fork();
         if (pid == -1) {
@@ -129,61 +131,50 @@ void execute_pipeline(char *commands) {
         }
 
         if (pid == 0) {
-            if (i > 0)
+            // Child process
+
+            // Redirect stdin if not the first command
+            if (i > 0) {
                 dup2(pipefds[(i - 1) * 2], STDIN_FILENO);
-            if (i < num_cmds - 1)
+            }
+
+            // Redirect stdout if not the last command
+            if (i < num_cmds - 1) {
                 dup2(pipefds[i * 2 + 1], STDOUT_FILENO);
+            }
 
-            for (int j = 0; j < 2 * (num_cmds - 1); j++)
+            // Close all pipe file descriptors
+            for (int j = 0; j < 2 * (num_cmds - 1); j++) {
                 close(pipefds[j]);
+            }
 
+            // Tokenize the current command
             char *args[10];
             int arg_idx = 0;
-            char *saveptr2;
-            char *arg = strtok_r(cmds[i], " ", &saveptr2);
-            while (arg && arg_idx < 9) {
-                args[arg_idx++] = arg;
-                arg = strtok_r(NULL, " ", &saveptr2);
+            char *arg_token = strtok(cmds[i], " ");
+            while (arg_token != NULL) {
+                args[arg_idx++] = arg_token;
+                arg_token = strtok(NULL, " ");
             }
             args[arg_idx] = NULL;
 
-            /* ---- BUILTINS (UNCHANGED) ---- */
-            if (strcmp(args[0], "echo") == 0) {
-                for (int j = 1; args[j]; j++) {
-                    printf("%s", args[j]);
-                    if (args[j + 1]) printf(" ");
-                }
-                printf("\n");
-                exit(0);
-            } else if (strcmp(args[0], "exit") == 0) {
-                exit(0);
-            } else if (strcmp(args[0], "type") == 0) {
-                if (!args[1]) {
-                    fprintf(stderr, "type: missing file operand\n");
-                } else if (!strcmp(args[1], "echo") ||
-                           !strcmp(args[1], "exit") ||
-                           !strcmp(args[1], "type")) {
-                    printf("%s is a shell builtin\n", args[1]);
-                } else {
-                    fprintf(stderr, "%s: not found\n", args[1]);
-                }
-                exit(0);
+            // Execute the command
+            if (execvp(args[0], args) == -1) {
+                perror("execvp");
+                exit(EXIT_FAILURE);
             }
-
-            execvp(args[0], args);
-            perror("execvp");
-            exit(EXIT_FAILURE);
         }
     }
 
-    for (int i = 0; i < 2 * (num_cmds - 1); i++)
+    // Parent process: close all pipe file descriptors
+    for (int i = 0; i < 2 * (num_cmds - 1); i++) {
         close(pipefds[i]);
+    }
 
-    for (int i = 0; i < num_cmds; i++)
+    // Wait for all child processes
+    for (int i = 0; i < num_cmds; i++) {
         wait(NULL);
-
-    for (int i = 0; i < num_cmds; i++)
-        free(cmds[i]);   // 🔑 CLEANUP
+    }
 }
 
 
