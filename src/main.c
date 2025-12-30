@@ -17,6 +17,7 @@ char *command_generator(const char *text, int state);
 const char *builtin_commands[] = {
     "echo",
     "exit",
+    "history",  // Add this line
     NULL
 };
 
@@ -253,7 +254,7 @@ void execute_pipeline(char *commands) {
                     fprintf(stderr, "type: missing file operand\n");
                 } else if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || 
                            strcmp(args[1], "type") == 0 || strcmp(args[1], "pwd") == 0 || 
-                           strcmp(args[1], "cd") == 0) {
+                           strcmp(args[1], "cd") == 0 || strcmp(args[1], "history") == 0) {  // Add history check
                     printf("%s is a shell builtin\n", args[1]);
                 } else {
                     fprintf(stderr, "%s: not found\n", args[1]);
@@ -284,6 +285,15 @@ void execute_pipeline(char *commands) {
                 } else {
                     if (chdir(args[1]) != 0) {
                         fprintf(stderr, "cd: %s: No such file or directory\n", args[1]);
+                    }
+                }
+                free(cmd_copy);
+                exit(0);
+            } else if (strcmp(args[0], "history") == 0) {
+                HIST_ENTRY **hist_list = history_list();
+                if (hist_list) {
+                    for (int j = 0; hist_list[j] != NULL; j++) {
+                        printf("%5d  %s\n", j + 1, hist_list[j]->line);
                     }
                 }
                 free(cmd_copy);
@@ -563,7 +573,9 @@ int main(int argc, char *argv[]) {
       }
 
       // Check if the argument is a built-in command
-      if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "type") == 0 || strcmp(args[1], "pwd") == 0 || strcmp(args[1], "cd") == 0) {
+      if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || 
+          strcmp(args[1], "type") == 0 || strcmp(args[1], "pwd") == 0 || 
+          strcmp(args[1], "cd") == 0 || strcmp(args[1], "history") == 0) {  // Add history check
         printf("%s is a shell builtin\n", args[1]);
         continue;
       }
