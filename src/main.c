@@ -250,6 +250,11 @@ void execute_pipeline(char *commands) {
                 free(cmd_copy);
                 exit(0);
             } else if (strcmp(args[0], "exit") == 0) {
+                // Save history to HISTFILE before exiting
+                char *histfile = getenv("HISTFILE");
+                if (histfile != NULL) {
+                    write_history(histfile);
+                }
                 free(cmd_copy);
                 exit(0);
             } else if (strcmp(args[0], "type") == 0) {
@@ -498,6 +503,12 @@ int main(int argc, char *argv[]) {
 
     // Handle the "exit" command
     if (strcmp(args[0], "exit") == 0) {
+      // Save history to HISTFILE before exiting
+      char *histfile = getenv("HISTFILE");
+      if (histfile != NULL) {
+        write_history(histfile);
+      }
+      
       if (args[1] != NULL) {
         int exit_code = atoi(args[1]);
         exit(exit_code);
