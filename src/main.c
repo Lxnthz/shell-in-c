@@ -290,24 +290,37 @@ void execute_pipeline(char *commands) {
                 free(cmd_copy);
                 exit(0);
             } else if (strcmp(args[0], "history") == 0) {
-                HIST_ENTRY **hist_list = history_list();
-                if (hist_list) {
-                    int total_entries = 0;
-                    while (hist_list[total_entries] != NULL) {
-                        total_entries++;
-                    }
-                    
-                    int start_index = 0;
-                    if (args[1] != NULL) {
-                        // history <n> - show last n entries
-                        int n = atoi(args[1]);
-                        if (n > 0 && n < total_entries) {
-                            start_index = total_entries - n;
+                // Check for -r flag to read history from file
+                if (args[1] != NULL && strcmp(args[1], "-r") == 0) {
+                    if (args[2] == NULL) {
+                        fprintf(stderr, "history: -r: option requires an argument\n");
+                    } else {
+                        // Read history from the specified file
+                        if (read_history(args[2]) != 0) {
+                            fprintf(stderr, "history: %s: cannot read history file\n", args[2]);
                         }
                     }
-                    
-                    for (int j = start_index; hist_list[j] != NULL; j++) {
-                        printf("%5d  %s\n", j + 1, hist_list[j]->line);
+                } else {
+                    // Display history
+                    HIST_ENTRY **hist_list = history_list();
+                    if (hist_list) {
+                        int total_entries = 0;
+                        while (hist_list[total_entries] != NULL) {
+                            total_entries++;
+                        }
+                        
+                        int start_index = 0;
+                        if (args[1] != NULL) {
+                            // history <n> - show last n entries
+                            int n = atoi(args[1]);
+                            if (n > 0 && n < total_entries) {
+                                start_index = total_entries - n;
+                            }
+                        }
+                        
+                        for (int j = start_index; hist_list[j] != NULL; j++) {
+                            printf("%5d  %s\n", j + 1, hist_list[j]->line);
+                        }
                     }
                 }
                 free(cmd_copy);
@@ -633,24 +646,37 @@ int main(int argc, char *argv[]) {
 
     // Handle the "history" command
     if (strcmp(args[0], "history") == 0) {
-      HIST_ENTRY **hist_list = history_list();
-      if (hist_list) {
-        int total_entries = 0;
-        while (hist_list[total_entries] != NULL) {
-          total_entries++;
-        }
-        
-        int start_index = 0;
-        if (args[1] != NULL) {
-          // history <n> - show last n entries
-          int n = atoi(args[1]);
-          if (n > 0 && n < total_entries) {
-            start_index = total_entries - n;
+      // Check for -r flag to read history from file
+      if (args[1] != NULL && strcmp(args[1], "-r") == 0) {
+        if (args[2] == NULL) {
+          fprintf(stderr, "history: -r: option requires an argument\n");
+        } else {
+          // Read history from the specified file
+          if (read_history(args[2]) != 0) {
+            fprintf(stderr, "history: %s: cannot read history file\n", args[2]);
           }
         }
-        
-        for (int j = start_index; hist_list[j] != NULL; j++) {
-          printf("%5d  %s\n", j + 1, hist_list[j]->line);
+      } else {
+        // Display history
+        HIST_ENTRY **hist_list = history_list();
+        if (hist_list) {
+          int total_entries = 0;
+          while (hist_list[total_entries] != NULL) {
+            total_entries++;
+          }
+          
+          int start_index = 0;
+          if (args[1] != NULL) {
+            // history <n> - show last n entries
+            int n = atoi(args[1]);
+            if (n > 0 && n < total_entries) {
+              start_index = total_entries - n;
+            }
+          }
+          
+          for (int j = start_index; hist_list[j] != NULL; j++) {
+            printf("%5d  %s\n", j + 1, hist_list[j]->line);
+          }
         }
       }
       continue; // Skip forking and executing
