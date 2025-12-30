@@ -164,13 +164,3 @@ What matters most is **curiosity and persistence**. This is not a follow-along t
 * Read history on startup
 * Write history on exit
 * Append history on exit
-
----
-
-If you want, I can also:
-
-* Tighten the language for a **portfolio README**
-* Add a **demo GIF / usage section**
-* Write a **“What I struggled with” / lessons learned** section
-
-Just say which direction you want.
