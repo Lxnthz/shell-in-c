@@ -101,131 +101,103 @@ char *command_generator(const char *text, int state) {
   return NULL; // No matches found
 }
 
-void execute_pipeline(char *cmd1, char *cmd2) {
-    int pipefd[2];
-    pid_t pid1, pid2;
+void execute_pipeline(char *commands) {
+    char *cmds[10]; // Array to store individual commands
+    int num_cmds = 0;
 
-    // Create the pipe
-    if (pipe(pipefd) == -1) {
-        perror("pipe");
-        return;
+    // Split the input into individual commands using '|'
+    char *token = strtok(commands, "|");
+    while (token != NULL) {
+        cmds[num_cmds++] = token;
+        token = strtok(NULL, "|");
     }
 
-    // Fork the first child process
-    pid1 = fork();
-    if (pid1 == -1) {
-        perror("fork");
-        return;
-    }
+    int pipefds[2 * (num_cmds - 1)]; // Array to store pipe file descriptors
 
-    if (pid1 == 0) {
-        // First child process: execute cmd1
-        close(pipefd[0]); // Close the read end of the pipe
-        dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to the write end of the pipe
-        close(pipefd[1]); // Close the write end after duplicating
-
-        char *args1[10];
-        int i = 0;
-        char *token = strtok(cmd1, " ");
-        while (token != NULL) {
-            args1[i++] = token;
-            token = strtok(NULL, " ");
+    // Create pipes
+    for (int i = 0; i < num_cmds - 1; i++) {
+        if (pipe(pipefds + i * 2) == -1) {
+            perror("pipe");
+            return;
         }
-        args1[i] = NULL;
+    }
 
-        // Check if cmd1 is a built-in command
-        if (strcmp(args1[0], "echo") == 0) {
-            // Handle "echo" built-in
-            for (int j = 1; args1[j] != NULL; j++) {
-                printf("%s", args1[j]);
-                if (args1[j + 1] != NULL) {
-                    printf(" ");
+    // Fork processes for each command
+    for (int i = 0; i < num_cmds; i++) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("fork");
+            return;
+        }
+
+        if (pid == 0) {
+            // Child process
+
+            // Redirect stdin if not the first command
+            if (i > 0) {
+                dup2(pipefds[(i - 1) * 2], STDIN_FILENO);
+            }
+
+            // Redirect stdout if not the last command
+            if (i < num_cmds - 1) {
+                dup2(pipefds[i * 2 + 1], STDOUT_FILENO);
+            }
+
+            // Close all pipe file descriptors
+            for (int j = 0; j < 2 * (num_cmds - 1); j++) {
+                close(pipefds[j]);
+            }
+
+            // Tokenize the current command
+            char *args[10];
+            int arg_idx = 0;
+            char *arg_token = strtok(cmds[i], " ");
+            while (arg_token != NULL) {
+                args[arg_idx++] = arg_token;
+                arg_token = strtok(NULL, " ");
+            }
+            args[arg_idx] = NULL;
+
+            // Check for built-in commands
+            if (strcmp(args[0], "echo") == 0) {
+                for (int j = 1; args[j] != NULL; j++) {
+                    printf("%s", args[j]);
+                    if (args[j + 1] != NULL) {
+                        printf(" ");
+                    }
                 }
-            }
-            printf("\n");
-            exit(0);
-        } else if (strcmp(args1[0], "exit") == 0) {
-            // Handle "exit" built-in
-            exit(0);
-        } else if (strcmp(args1[0], "type") == 0) {
-            // Handle "type" built-in
-            if (args1[1] == NULL) {
-                fprintf(stderr, "type: missing file operand\n");
-            } else if (strcmp(args1[1], "echo") == 0 || strcmp(args1[1], "exit") == 0 || strcmp(args1[1], "type") == 0) {
-                printf("%s is a shell builtin\n", args1[1]);
-            } else {
-                fprintf(stderr, "%s: not found\n", args1[1]);
-            }
-            exit(0);
-        }
-
-        // If not a built-in, execute as an external command
-        if (execvp(args1[0], args1) == -1) {
-            perror("execvp");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    // Fork the second child process
-    pid2 = fork();
-    if (pid2 == -1) {
-        perror("fork");
-        return;
-    }
-
-    if (pid2 == 0) {
-        // Second child process: execute cmd2
-        close(pipefd[1]); // Close the write end of the pipe
-        dup2(pipefd[0], STDIN_FILENO); // Redirect stdin to the read end of the pipe
-        close(pipefd[0]); // Close the read end after duplicating
-
-        char *args2[10];
-        int i = 0;
-        char *token = strtok(cmd2, " ");
-        while (token != NULL) {
-            args2[i++] = token;
-            token = strtok(NULL, " ");
-        }
-        args2[i] = NULL;
-
-        // Check if cmd2 is a built-in command
-        if (strcmp(args2[0], "echo") == 0) {
-            // Handle "echo" built-in
-            for (int j = 1; args2[j] != NULL; j++) {
-                printf("%s", args2[j]);
-                if (args2[j + 1] != NULL) {
-                    printf(" ");
+                printf("\n");
+                exit(0);
+            } else if (strcmp(args[0], "exit") == 0) {
+                exit(0);
+            } else if (strcmp(args[0], "type") == 0) {
+                if (args[1] == NULL) {
+                    fprintf(stderr, "type: missing file operand\n");
+                } else if (strcmp(args[1], "echo") == 0 || strcmp(args[1], "exit") == 0 || strcmp(args[1], "type") == 0) {
+                    printf("%s is a shell builtin\n", args[1]);
+                } else {
+                    fprintf(stderr, "%s: not found\n", args[1]);
                 }
+                exit(0);
             }
-            printf("\n");
-            exit(0);
-        } else if (strcmp(args2[0], "exit") == 0) {
-            // Handle "exit" built-in
-            exit(0);
-        } else if (strcmp(args2[0], "type") == 0) {
-            // Handle "type" built-in
-            if (args2[1] == NULL) {
-                fprintf(stderr, "type: missing file operand\n");
-            } else if (strcmp(args2[1], "echo") == 0 || strcmp(args2[1], "exit") == 0 || strcmp(args2[1], "type") == 0) {
-                printf("%s is a shell builtin\n", args2[1]);
-            } else {
-                fprintf(stderr, "%s: not found\n", args2[1]);
-            }
-            exit(0);
-        }
 
-        // If not a built-in, execute as an external command
-        if (execvp(args2[0], args2) == -1) {
-            perror("execvp");
-            exit(EXIT_FAILURE);
+            // Execute external commands
+            if (execvp(args[0], args) == -1) {
+                perror("execvp");
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
-    // Parent process: close both ends of the pipe and wait for both children
-    close(pipefd[0]);
-    close(pipefd[1]);
-    waitpid(pid1, NULL, 0);
-    waitpid(pid2, NULL, 0);
+    // Parent process: close all pipe file descriptors
+    for (int i = 0; i < 2 * (num_cmds - 1); i++) {
+        close(pipefds[i]);
+    }
+
+    // Wait for all child processes
+    for (int i = 0; i < num_cmds; i++) {
+        wait(NULL);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -254,18 +226,8 @@ int main(int argc, char *argv[]) {
     command[sizeof(command) - 1] = '\0';
 
     // Check for the pipe operator
-    char *pipe_pos = strchr(command, '|');
-    if (pipe_pos != NULL) {
-      // Split the command into two parts
-      *pipe_pos = '\0';
-      char *cmd1 = command;
-      char *cmd2 = pipe_pos + 1;
-
-      // Trim leading/trailing spaces
-      while (*cmd1 == ' ') cmd1++;
-      while (*cmd2 == ' ') cmd2++;
-
-      execute_pipeline(cmd1, cmd2);
+    if (strchr(command, '|') != NULL) {
+      execute_pipeline(command);
       free(line);
       continue;
     }
